@@ -28,8 +28,9 @@ speech-classification
 ｜-speech_hw.ipynb  
 ｜-sample_submission.csv  
 
-准备好之后可以通过(我是macOS系统)
+准备好之后可以通过(我是macOS系统，windows可以自行查找一下相关cmd命令)
 ```zsh
 !ls
 ```
 进行查看
+
