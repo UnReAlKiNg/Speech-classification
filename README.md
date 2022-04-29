@@ -189,3 +189,45 @@ import torchvision
 model = torchvision.models.resnet18()
 model.conv1 = nn.Conv2d(1, 64, kernel_size=(7, 7), stride=(2, 2), padding=(3, 3), bias=False)
 ```
+这里使用torchaudio而不是librosa的原因是，librosa效率真的很低，同样设置(程序参数、模型、电脑配置(MacBook Pro，M1))，torchaudio可以只用50%左右的cpu，实现8分钟一个epoch，而librosa却要占用近90%的cpu，同时还要30分钟一个epoch，效率差距显而易见
+
+##创建数据集  
+定义一些参数：  
+```python
+config = {
+    'batch_size': 64,
+    'num_workers': 0,
+    'epochs': 10,
+    'device': 'cpu'
+}
+```
+以及生成数据集：  
+```python
+train_dataset = SpeechDataset(
+    data_path = x_train,
+    target = y_train,
+    is_test = False
+)
+valid_dataset = SpeechDataset(
+    data_path = x_test,
+    target = y_test,
+    is_test = False
+)
+train_loader = DataLoader(
+    train_dataset,
+    batch_size = config['batch_size'],
+    shuffle = True,
+    num_workers = config['num_workers'],
+    drop_last = True
+)
+valid_loader = DataLoader(
+    valid_dataset,
+    batch_size = config['batch_size'],
+    shuffle = False,
+    num_workers = config['num_workers'],
+    drop_last = False
+)
+```
+
+##设置模型  
+这里采用的是resnet18，因为我们的训练数据规模较小，使用大的网络(如resnet34或者resnet50)会出现过拟合
