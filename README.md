@@ -24,6 +24,12 @@ import cv2
 具体格式为：  
 speech-classification  
 ｜  
-｜-audio_files  
+｜-audio_files(所有音频文件)  
 ｜-speech_hw.ipynb  
 ｜-sample_submission.csv  
+
+准备好之后可以通过(我是macOS系统)
+```zsh
+!ls
+```
+进行查看
