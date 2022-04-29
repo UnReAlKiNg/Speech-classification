@@ -230,4 +230,123 @@ valid_loader = DataLoader(
 ```
 
 ## 设置模型  
-这里采用的是resnet18，因为我们的训练数据规模较小，使用大的网络(如resnet34或者resnet50)会出现过拟合
+这里采用的是resnet18，因为我们的训练数据规模较小，使用大的网络(如resnet34或者resnet50)会出现过拟合。优化器和损失函数还是经典的Adam+CrossEntropyLoss组合。  
+```python
+model = torchvision.models.resnet18(num_classes=35)
+#model = torchvision.models.mobilenet_v3_small(num_classes=35)
+#model.features[0][0] = nn.Conv2d(1, 16, kernel_size=(3, 3), stride=(2, 2), padding=(1, 1), bias=False)
+model.to(config['device'])
+
+# 获取优化方法
+optimizer = torch.optim.Adam(params=model.parameters(), lr=1e-4, betas=(0.9,0.99), eps=1e-6, weight_decay=5e-4)
+#optimizer = torch.optim.SGD(model.parameters(), lr=1e-2, momentum=0.9, weight_decay=1e-2)
+# 获取学习率衰减函数
+scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=20, gamma=0.1)
+#scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer, milestones=[1, 2, 3, 4], gamma=0.3)
+# 获取损失函数
+loss = torch.nn.CrossEntropyLoss()
+device = 'cpu'
+```
+
+## 定义训练和验证函数
+```python
+def train(dataloader, model, loss_fn, optimizer):
+    size = len(dataloader.dataset)
+    model.train()
+    for batch, (X, y) in enumerate(dataloader):
+        X, y = X.to(device), y.to(device)
+
+        # Compute prediction error
+        pred = model(X)
+        loss = loss_fn(pred, y)
+
+        # Backpropagation
+        optimizer.zero_grad()
+        loss.backward()
+        optimizer.step()
+
+        if batch % 100 == 0:
+            loss, current = loss.item(), batch * len(X)
+            print(f"loss: {loss:>7f}  [{current:>5d}/{size:>5d}]")
+
+def validation(dataloader, model, loss_fn):
+    size = len(dataloader.dataset)
+    num_batches = len(dataloader)
+    model.eval()
+    test_loss, correct = 0, 0
+    with torch.no_grad():
+        for X, y in dataloader:
+            X, y = X.to(device), y.to(device)
+            pred = model(X)
+            test_loss += loss_fn(pred, y).item()
+            correct += (pred.argmax(1) == y).type(torch.float).sum().item()
+            
+    test_loss /= num_batches
+    correct /= size
+    print(f"Val Error: \n Accuracy: {(100 * correct):>0.1f}%, Avg loss: {test_loss:>8f} \n")
+    
+```
+
+## 开始训练！  
+```python
+epochs = 30
+for t in tqdm(range(epochs)):
+    print(f"Epoch {t + 1}\n-------------------------------")
+    train(train_loader, model, loss, optimizer)
+    validation(valid_loader, model, loss)
+
+print("Done!")
+```
+
+## 读取待预测的文件  
+```python
+submission = pd.read_csv("sample_submission.csv")
+test_filename = list(submission.loc[:,"file_name"])
+test_dir = []
+for item in test_filename:
+  ans = audio_dir + item
+  test_dir.append(ans)
+
+test_dir[0:10]
+```
+
+## 预测  
+首先将Dataset里面使用的函数搬过来，对待预测文件进行相同处理(注意使用self.xxx的地方要进行修改)。同时get_keys()函数是用来通过序号反找对应标签(因为标签-序号是单值对应，所以不会重复)  
+```python
+def get_keys(d, value):
+    return [k for k,v in d.items() if v == value]
+
+result = []
+for fpath in tqdm(test_dir):   
+    samples, sr = torchaudio.load(fpath)
+    samples = pad_trunc(samples,16000)
+
+    spect = torchaudio.transforms.MelSpectrogram(
+        sample_rate = 16000,
+        n_fft=1024,
+        hop_length=None,
+        n_mels=64
+    )(samples)
+
+    spect = torchaudio.transforms.AmplitudeToDB(top_db=80)(spect)
+    spect = rechannel(spect,16000,3)
+    spect = spect[np.newaxis,:]
+
+    
+    output = model(spect)
+    ans = torch.nn.functional.softmax(output)
+    ans = ans.data.cpu().numpy()
+    lab = np.argsort(ans)[0][-1]
+    result.append(lab)
+    
+res1 = []
+for elem in result:
+    tg = get_keys(class_dic, elem)
+    res1.append(tg[0])    
+
+submission["target"] = res1
+submission.to_csv("new_submission.csv", index=None)
+submission.head()
+```
+
+## Well done!
