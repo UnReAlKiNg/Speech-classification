@@ -36,7 +36,7 @@ speech-classification
 ```
 进行查看
 
-##读取训练数据
+## 读取训练数据
 ```python
 train_file = "train.csv"
 audio_dir = "audio_files/"
@@ -88,7 +88,7 @@ print("y_train = \n", y_train[0:10])
 ```
 这里会生成一个标签-序号的字典（例如{'bird': 0, 'zero': 1,...},每次运行字典会变化），一共35个类别  
 
-##编辑Dataset  
+## 编辑Dataset  
 首先还是引入必要的库
 ```python
 import numpy as np
@@ -191,7 +191,7 @@ model.conv1 = nn.Conv2d(1, 64, kernel_size=(7, 7), stride=(2, 2), padding=(3, 3)
 ```
 这里使用torchaudio而不是librosa的原因是，librosa效率真的很低，同样设置(程序参数、模型、电脑配置(MacBook Pro，M1))，torchaudio可以只用50%左右的cpu，实现8分钟一个epoch，而librosa却要占用近90%的cpu，同时还要30分钟一个epoch，效率差距显而易见
 
-##创建数据集  
+## 创建数据集  
 定义一些参数：  
 ```python
 config = {
@@ -229,5 +229,5 @@ valid_loader = DataLoader(
 )
 ```
 
-##设置模型  
+## 设置模型  
 这里采用的是resnet18，因为我们的训练数据规模较小，使用大的网络(如resnet34或者resnet50)会出现过拟合
