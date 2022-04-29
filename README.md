@@ -20,3 +20,10 @@ from sklearn import preprocessing
 import IPython.display as ipd
 import cv2
 ```
+这里建议先创建文件夹“speech-classification”，将数据集压缩包下载好之后解压到文件夹“speech-classification/audio_files/”下。同时，将文件“speech_hw.ipynb”和"sample_submission.csv"也放到目录“speech-classification”下。  
+具体格式为：  
+speech-classification  
+｜  
+｜-audio_files  
+｜-speech_hw.ipynb  
+｜-sample_submission.csv  
